@@ -58,6 +58,11 @@ ul.services{list-style:none;margin:1.25rem 0;padding:0}
 .phone{display:inline-block;font-size:1.5rem;font-weight:600;font-variant-numeric:tabular-nums;color:var(--focus);margin:.1rem 0}
 .services p{margin:.2rem 0 0;color:var(--muted)}
 textarea{width:100%;min-height:5rem;resize:vertical}
+.closing{margin-top:2rem;padding-top:1.5rem;border-top:1px solid var(--line)}
+.closing ul{list-style:none;margin:1rem 0;padding:0}
+.closing li{margin:.25rem 0}
+.closing label.inline{color:var(--ink);font-size:1rem}
+.nudge{color:var(--muted);margin:0 0 .75rem}
 footer{margin-top:2.5rem;padding-top:1.25rem;border-top:1px solid var(--line);color:var(--muted);font-size:.9rem}
 a{color:var(--focus)}
 @media (prefers-reduced-motion:reduce){.arc{transition:none}}
@@ -112,6 +117,23 @@ a{color:var(--focus)}
 </div>
 <p class="late-msg" id="lateMsg" aria-live="polite"></p>
 <div class="totals"><span id="sumE"></span><span id="sumT"></span><span id="sumD"></span></div>
+<div class="closing">
+<h2>Encerrar o dia</h2>
+<p class="nudge" id="endNudge" hidden></p>
+<button class="btn" id="closeDay">Encerrar o dia</button>
+<div id="closeBox" hidden>
+<p>Por hoje, chega. O que ficou pode esperar até amanhã.</p>
+<ul>
+<li><label class="inline"><input type="checkbox"> Salvar o que está aberto e fechar o computador ou as abas de trabalho</label></li>
+<li><label class="inline"><input type="checkbox"> Silenciar as mensagens de trabalho até amanhã</label></li>
+<li><label class="inline"><input type="checkbox"> Fazer algo de que você gosta, mesmo que seja pequeno</label></li>
+</ul>
+<label>Uma coisa para retomar amanhã (fica só neste aparelho)<textarea id="tomorrow" placeholder="Uma frase basta"></textarea></label>
+<p></p>
+<button class="btn primary" id="finishDay">Pronto</button>
+</div>
+<p class="lead" id="bye" hidden>Dia encerrado. Bom descanso.</p>
+</div>
 </section>
 
 <section id="support" role="tabpanel" aria-labelledby="tab-support" hidden>
@@ -242,15 +264,26 @@ cells.forEach(b=>{paintCell(b);const v=grid[b.dataset.key];if(v){count[v]++;if(e
 $("#sumE").textContent="Estudo: "+count.E+" h";
 $("#sumT").textContent="Trabalho: "+count.T+" h";
 $("#sumD").textContent="Descanso: "+count.D+" h";
-$("#lateMsg").textContent=late?"Você planejou "+late+" h de estudo ou trabalho depois das "+endHour+"h (bordas tracejadas). Dá para mover algum bloco para mais cedo?":"";
+$("#lateMsg").textContent=late?"Você planejou "+late+" h de estudo ou trabalho depois das "+endHour+"h (bordas tracejadas). Se fizer sentido, dá para mover algum bloco para mais cedo.":"";
 }
 const sel=$("#endHour");
 [[0,"Não definido"]].concat([17,18,19,20,21,22,23].map(h=>[h,h+"h"])).forEach(([v,t])=>{const o=document.createElement("option");o.value=v;o.textContent=t;sel.appendChild(o)});
 sel.value=endHour;
-sel.onchange=()=>{endHour=Number(sel.value);save("deb.end",endHour);summarize()};
+sel.onchange=()=>{endHour=Number(sel.value);save("deb.end",endHour);summarize();updateNudge()};
 $("#clearWeek").onclick=()=>{if(confirm("Limpar todos os blocos da semana?")){grid={};save("deb.grid",grid);summarize()}};
 summarize();
 
+function updateNudge(){
+const n=$("#endNudge");
+if(endHour>0&&new Date().getHours()>=endHour){n.textContent="Já passou das "+endHour+"h, o horário de encerramento que você definiu. Se fizer sentido, que tal encerrar o dia?";n.hidden=false}else{n.hidden=true}
+}
+updateNudge();
+setInterval(updateNudge,60000);
+const tomorrow=$("#tomorrow");
+tomorrow.value=load("deb.tomorrow","");
+tomorrow.oninput=()=>save("deb.tomorrow",tomorrow.value);
+$("#closeDay").onclick=()=>{$("#bye").hidden=true;$("#closeBox").hidden=false;$("#closeDay").hidden=true};
+$("#finishDay").onclick=()=>{document.querySelectorAll("#closeBox input[type=checkbox]").forEach(c=>c.checked=false);$("#closeBox").hidden=true;$("#closeDay").hidden=false;$("#bye").hidden=false};
 const contact=$("#contact");
 contact.value=load("deb.contact","");
 contact.oninput=()=>save("deb.contact",contact.value);
